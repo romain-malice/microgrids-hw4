@@ -66,9 +66,9 @@ def print_sizing_results(res):
 def plot_res(res):
     #TODO: Make a nice looking plot function
     plt.figure()
-    plt.plot(res.P_imp, label="Import")
-    plt.plot(res.P_exp, label="Export")
-    plt.plot(res.P_pv, label="PV")
+    plt.plot(res.P_imp,label="Import")
+    plt.plot(res.P_exp,label="Export")
+    plt.plot(res.P_pv ,label="PV")
     plt.legend()
     plt.title("Power flows")
     plt.show()
