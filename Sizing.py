@@ -45,6 +45,9 @@ def create_model(res):
     model.C_ev = Param(initialize=C_ev)                                     # EV capacity
     model.P_nom_hp = Param(initialize=P_max_hp)                                 # HP max power
 
+    model.C_bss.fix(40)
+    model.P_nom_bss.fix(10)
+    model.P_max_gen.fix(10)
     # Variables
     model.P_imp = Var(model.periods, within=NonNegativeReals)              # Imported power
     model.P_exp = Var(model.periods, within=NonNegativeReals)              # Exported power
@@ -65,12 +68,19 @@ def create_model(res):
     model.SOC_ev = Var(model.periods, within=NonNegativeReals)             # EV state of charge [kWh]
     
     # Define the objective function ----------------------------------------------------------------------------
-    model.objective = Objective(sense=minimize,
-                                expr=0)
+    model.objective = Objective(sense=minimize,expr=sum(
+            (model.P_imp[t]*PI_imp + PI_gen * model.P_gen[t]- PI_exp * model.P_exp[t]) * delta_t for t in model.periods)
+            +# CAPEX 
+            (PI_c_pv * model.C_pv+ PI_c_bss * model.C_bss+ PI_c_gen * model.P_max_gen) / delta_t for t in model.periods) 
+    
     
     #Constraints ---------------------------------------------------------------------------------------------------------------------------
-    
+
+
     return model
+
+
+
 
 def run(model, results):
     model, results = utils.solve_model(model, results)
@@ -78,6 +88,7 @@ def run(model, results):
         utils.check_res(results)
         utils.print_res(results)
         utils.plot_res(results) 
+        utils.compute_year_costs(results)
     return results
 
 
@@ -88,3 +99,4 @@ if __name__ == "__main__":
     results = utils.Results(start_time, n_days, yearly_kwh=0, yearly_km=0)      # Initialize results object with start time and number of days, yearly consumption and km driven
     model = create_model(results)
     run(model, results)
+    

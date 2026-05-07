@@ -6,29 +6,85 @@ from param import *
 
 def check_res(res):
     eps = 1e-3  # 1 W or .1% error tolerance
+     # TODO: Make a function that test if the physical constraitns are indead respected
     for t in range(len(res.t)):
-        0=0
-        # TODO: Make a function that test if the physical constraitns are indead respected
+        balance = 0
+        if(res.P_bss[t] >= 0 and res.P_ev[t] >=0):#battery in charge and ev in charge
+            in_pow = res.P_imp[t] + res.P_pv[t] + res.P_gen[t] + res.P_bss[t] + res.P_ev[t]
+            out_pow = res.P_exp[t] 
+            balance = in_pow - out_pow
+        elif(res.P_bss[t] >=0 and res.P_ev[t] <=0): #battery in charge and ev in discharge
+            in_pow = res.P_imp[t] + res.P_pv[t] + res.P_gen[t] + res.P_bss[t] 
+            out_pow = res.P_exp[t] + res.P_ev[t]
+            balance = in_pow - out_pow
+        elif(res.P_bss[t] <=0 and res.P_ev[t] <=0): #battery in discharge and ev in discharge
+            in_pow = res.P_imp[t] + res.P_pv[t] + res.P_gen[t] 
+            out_pow = res.P_exp[t] + res.P_ev[t] + res.P_bss[t] 
+            balance = in_pow - out_pow
+        elif(res.P_bss[t] <=0 and res.P_ev[t] >=0): #battery in discharge and ev in charge
+            in_pow = res.P_imp[t] + res.P_pv[t] + res.P_gen[t] + res.P_ev[t]
+            out_pow = res.P_exp[t] + res.P_bss[t] 
+            balance = in_pow - out_pow
+        
+        if abs(balance - res.P_load[t])>= eps:
+                #print("Error at t =", t)
+                pass
+                
     return
 
 def print_res(res):
     # TODO: Make a function to print a summary of the results
+    
+    print("Objective value:", res.objective)#couts
+    print("Import of the model:", sum(res.P_imp))#variables de décisions du model
+    print("Export of the model:", sum(res.P_exp))#variables de décisions du model
+    print("PV of the model:", sum(res.P_pv))#variables de décisions du model
+    print("Generator production of the model:", sum(res.P_gen))#variables de décisions du model
+
+    print("Total HP heating:", sum(res.P_hp_hot))#variables de décisions du model
+    print("Total HP cooling:", sum(res.P_hp_cold))#variables de décisions du model
+
+    
+    print("Final battery SOC:", res.SOC_bss[-1])#etat final du model
+    print("Final EV SOC:", res.SOC_ev[-1])#etat final du model
     return
 
 def print_sizing_results(res):
     # TODO: Add a print with additional info specific to part 2
+    print('Capacity of battery',res.C_bss )
+    print('Power of battery',res.P_nom_bss)
+    print('Capacity of pv',res.C_pv )
+    print('Power of pv',res.P_nom_pv)
+    print('Power of generator',res.P_nom_gen)
+    print('Capacity of ev',res.C_ev )
+    print('Power of ev',res.P_nom_ev)
+    
     return
 
 
 
 def plot_res(res):
     #TODO: Make a nice looking plot function
+    plt.figure()
+    plt.plot(res.P_imp,label="Import")
+    plt.plot(res.P_exp,label="Export")
+    plt.plot(res.P_pv ,label="PV")
+    plt.legend()
+    plt.title("Power flows")
+    plt.show()
+
+    plt.figure()
+    plt.plot(res.SOC_bss, label="Battery SOC")
+    plt.plot(res.SOC_ev, label="EV SOC")
+    plt.legend()
+    plt.title("State of charge")
+    plt.show()
     return
 
 def solve_model(m, res):
     # Solve the optimization problem
     solver = SolverFactory('gurobi')
-    output = solver.solve(m)#, tee=True)  # Parameter 'tee=True' prints the solver output
+    output = solver.solve(m, tee=True)  # Parameter 'tee=True' prints the solver output
 
     # Print elapsed time
     status = output.solver.status
@@ -127,4 +183,18 @@ def save_results(res, m):
     res.SOC_bss = np.array([m.SOC_bss[t].value for t in m.periods])
     res.objective = m.objective()
     return res
+
+def compute_year_costs(res):
+    cost_import=np.sum(res.P_imp)*PI_imp*delta_t
+    cost_export=np.sum(res.P_exp)*PI_exp*delta_t
+    cost_gen=np.sum(res.P_gen)*PI_gen*delta_t
+
+    opex=cost_import+cost_gen-cost_export
+
+    print("cost of one year")
+    print("Import cost:", cost_import)
+    print("Export revenue:", cost_export)
+    print("Generator cost:", cost_gen)
+    print("OPEX:", opex)
+    return 
 
