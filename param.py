@@ -39,8 +39,8 @@ SOC_max_ev = 0.95               # Maximum SOC for the EV battery [0, 1]
 # HP Parameters 
 P_max_hp = 10 #Nominal power of the HP [kW]
 COP_hp = 2.5 # Coefficient of Performance [kWth/kWe]
-delta_T_max = 2 # Accepted temperature range [°]
-C_hp = (307781.25 + 0.5*307781.25)/(1e3*60*60) # Home thermal inertia [kWh/°]
+delta_T_max = 2 # Accepted temperature range [ï¿½]
+C_hp = (307781.25 + 0.5*307781.25)/(1e3*60*60) # Home thermal inertia [kWh/ï¿½]
 
 
 
