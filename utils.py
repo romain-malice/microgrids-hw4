@@ -4,32 +4,28 @@ import pandas as pd
 import numpy as np
 from param import *
 
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+
 def check_res(res):
-    eps = 1e-3  # 1 W or .1% error tolerance
-     # TODO: Make a function that test if the physical constraitns are indead respected
+
+    eps = 1e-3
+
     for t in range(len(res.t)):
-        balance = 0
-        if(res.P_bss[t] >= 0 and res.P_ev[t] >=0):#battery in charge and ev in charge
-            in_pow = res.P_imp[t] + res.P_pv[t] + res.P_gen[t] + res.P_bss[t] + res.P_ev[t]
-            out_pow = res.P_exp[t] 
-            balance = in_pow - out_pow
-        elif(res.P_bss[t] >=0 and res.P_ev[t] <=0): #battery in charge and ev in discharge
-            in_pow = res.P_imp[t] + res.P_pv[t] + res.P_gen[t] + res.P_bss[t] 
-            out_pow = res.P_exp[t] + res.P_ev[t]
-            balance = in_pow - out_pow
-        elif(res.P_bss[t] <=0 and res.P_ev[t] <=0): #battery in discharge and ev in discharge
-            in_pow = res.P_imp[t] + res.P_pv[t] + res.P_gen[t] 
-            out_pow = res.P_exp[t] + res.P_ev[t] + res.P_bss[t] 
-            balance = in_pow - out_pow
-        elif(res.P_bss[t] <=0 and res.P_ev[t] >=0): #battery in discharge and ev in charge
-            in_pow = res.P_imp[t] + res.P_pv[t] + res.P_gen[t] + res.P_ev[t]
-            out_pow = res.P_exp[t] + res.P_bss[t] 
-            balance = in_pow - out_pow
-        
-        if abs(balance - res.P_load[t])>= eps:
-                #print("Error at t =", t)
-                pass
-                
+
+        P_charge_bss = max(res.P_bss[t], 0)
+        P_discharge_bss = max(-res.P_bss[t], 0)
+
+        P_charge_ev = max(res.P_ev[t], 0)
+        P_discharge_ev = max(-res.P_ev[t], 0)
+
+        prod = (res.P_imp[t]+ 
+               res.P_pv[t]+ res.P_gen[t]+ P_discharge_bss+ P_discharge_ev)
+        cons = (res.P_exp[t]+ P_charge_bss+P_charge_ev+res.P_load[t] 
+               + res.P_hp_hot[t]+ res.P_hp_cold[t])
+        error = abs(prod - cons)
+        if error >= eps:
+            print(f"Error at t={t}, mismatch={error:.6f}")
     return
 
 def print_res(res):
@@ -64,23 +60,91 @@ def print_sizing_results(res):
 
 
 def plot_res(res):
-    #TODO: Make a nice looking plot function
-    plt.figure()
-    plt.plot(res.P_imp,label="Import")
-    plt.plot(res.P_exp,label="Export")
-    plt.plot(res.P_pv ,label="PV")
-    plt.legend()
-    plt.title("Power flows")
-    plt.show()
 
-    plt.figure()
-    plt.plot(res.SOC_bss, label="Battery SOC")
-    plt.plot(res.SOC_ev, label="EV SOC")
-    plt.legend()
-    plt.title("State of charge")
-    plt.show()
+    P_charge_bss = np.maximum(res.P_bss, 0)
+    P_discharge_bss = np.maximum(-res.P_bss, 0)
+
+    P_charge_ev = np.maximum(res.P_ev, 0)
+    P_discharge_ev = np.maximum(-res.P_ev, 0)
+
+    total_consumption = (res.P_load+P_charge_bss+P_charge_ev+res.P_hp_hot
+        +res.P_hp_cold+res.P_exp)
+
+    total_production = (res.P_imp+res.P_pv+res.P_gen+P_discharge_bss
+        +P_discharge_ev)
+
+    balance_error = total_production-total_consumption
+
+    SOC_bss_percent = 100*res.SOC_bss/res.C_bss
+
+    SOC_ev_percent = 100*res.SOC_ev/res.C_ev
+
+    # cacher EV quand absent
+    SOC_ev_percent = np.where(res.EV_connected == 1,SOC_ev_percent,np.nan)
+
+    #  bilan énergétique
+    fig1 = make_subplots(rows=2,cols=1,shared_xaxes=True,vertical_spacing=0.08,
+                         subplot_titles=("Energy flows","Energy balance residual"))
+
+    # Flux principaux
+    fig1.add_trace(go.Scatter(x=res.datetime,y=res.P_imp,name="Import"),row=1, col=1)
+
+    fig1.add_trace(go.Scatter(x=res.datetime, y=res.P_exp,name="Export"),row=1, col=1)
+
+    fig1.add_trace(go.Scatter( x=res.datetime,y=res.P_gen,name="Generator"),row=1, col=1)
+
+    fig1.add_trace(go.Scatter(x=res.datetime,y=res.P_pv,name="PV"),row=1, col=1)
+
+    fig1.add_trace(go.Scatter(x=res.datetime,y=total_consumption,name="Total consumption"),
+        row=1, col=1)
+    
+    # Erreur de bilan
+    fig1.add_trace(go.Scatter(x=res.datetime,y=balance_error,name="Balance error"),
+        row=2, col=1)
+
+    fig1.update_layout(title="Energy balance verification",height=800,
+        xaxis2_title="Time",yaxis_title="Power [kW]",yaxis2_title="Residual [kW]",
+        hovermode="x unified")
+
+    fig1.show()
+
+
+    fig2 = make_subplots(rows=2,cols=1,shared_xaxes=True,
+        vertical_spacing=0.08,subplot_titles=("Power flows","SOC evolution"))
+
+
+    fig2.add_trace(go.Scatter(x=res.datetime,y=res.P_imp,name="Import"),
+        row=1, col=1)
+
+    fig2.add_trace(go.Scatter(x=res.datetime,y=res.P_exp,name="Export"),
+        row=1, col=1)
+
+    fig2.add_trace(go.Scatter(x=res.datetime,y=res.P_gen,name="Generator"),
+        row=1, col=1)
+    
+    fig2.add_trace(go.Scatter(x=res.datetime,y=res.P_pv,name="PV"),
+        row=1, col=1)
+
+    fig2.add_trace(go.Scatter(x=res.datetime,y=res.P_hp_hot,name="HP heating"),
+        row=1, col=1)
+
+    fig2.add_trace(go.Scatter(x=res.datetime,y=res.P_hp_cold,name="HP cooling"),
+        row=1, col=1)
+
+    # SOC batterie
+    fig2.add_trace(go.Scatter(x=res.datetime,y=SOC_bss_percent,name="Battery SOC [%]"),
+        row=2, col=1)
+
+    # SOC EV
+    fig2.add_trace(go.Scatter(x=res.datetime,y=SOC_ev_percent,name="EV SOC [%]"),
+        row=2, col=1)
+
+    fig2.update_layout(title="Microgrid operation",height=900,xaxis2_title="Time",
+        yaxis_title="Power [kW]",yaxis2_title="SOC [%]",hovermode="x unified")
+
+    fig2.show()
+
     return
-
 def solve_model(m, res):
     # Solve the optimization problem
     solver = SolverFactory('gurobi')

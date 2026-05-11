@@ -71,7 +71,7 @@ def create_model(res):
     model.objective = Objective(sense=minimize,expr=sum(
             (model.P_imp[t]*PI_imp + PI_gen * model.P_gen[t]- PI_exp * model.P_exp[t]) * delta_t for t in model.periods)
             +# CAPEX 
-            (PI_c_pv * model.C_pv+ PI_c_bss * model.C_bss+ PI_c_gen * model.P_max_gen) / delta_t for t in model.periods) 
+            (PI_c_pv * model.C_pv+ PI_c_bss * model.C_bss+ PI_c_gen * model.P_max_gen) / delta_t for t in model.periods)
     
     
     #Constraints ---------------------------------------------------------------------------------------------------------------------------
