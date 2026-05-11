@@ -143,6 +143,8 @@ def plot_res(res):
         yaxis_title="Power [kW]",yaxis2_title="SOC [%]",hovermode="x unified")
 
     fig2.show()
+    fig1.write_html("energy_balance.html")
+    fig2.write_html("microgrid_operation.html")
 
     return
 def solve_model(m, res):

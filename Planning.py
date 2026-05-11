@@ -3,7 +3,7 @@ from param import SOC_min_bss, SOC_max_bss, eff_bss
 from param import C_ev, P_nom_ev, eff_ev, SOC_min_ev, SOC_max_ev, SOC_target_ev
 from param import PI_gen, PI_imp, PI_exp
 from param import P_max_hp, COP_hp, delta_T_max, C_hp
-from param import PI_c_pv, PI_c_bss, PI_c_gen
+
 
 from pyomo.environ import ConcreteModel, Param, Var, Objective, Constraint, NonNegativeReals, Binary, minimize
 from datetime import datetime
