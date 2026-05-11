@@ -3,7 +3,6 @@ from param import SOC_min_bss, SOC_max_bss, eff_bss
 from param import C_ev, P_nom_ev, eff_ev, SOC_min_ev, SOC_max_ev, SOC_target_ev
 from param import PI_gen, PI_imp, PI_exp
 from param import P_max_hp, COP_hp, delta_T_max, C_hp
-
 from param import PI_c_pv, PI_c_bss, PI_c_gen
 
 from pyomo.environ import ConcreteModel, Param, Var, Objective, Constraint, NonNegativeReals, Binary, minimize
@@ -108,7 +107,7 @@ def create_model(res,C_pv,C_bss,P_nom_bss, P_nom_pv, P_max_gen):
 
     #model 
     model.export_limit = Constraint(model.periods, rule=export_limit_rule)
-   
+    #model.import_limit= Constraint(model.periods, rule = import_limit_rule)
     
     return model
 
@@ -160,11 +159,8 @@ def soc_ev_const(model, t):
         return model.SOC_ev[t] == model.SOC_i_ev[t]
 
     else:
-        return model.SOC_ev[t] == (
-            model.SOC_ev[t-1]
-            + delta_t * (
-                eff_ev * model.P_charge_ev[t]
-                - model.P_discharge_ev[t] / eff_ev))
+        return model.SOC_ev[t] == (model.SOC_ev[t-1]+delta_t * (eff_ev*model.P_charge_ev[t]
+                -model.P_discharge_ev[t] / eff_ev))
 def soc_ev_min_const(model,t): 
      return model.SOC_ev[t] >= SOC_min_ev*model.C_ev*model.EV_connected[t]
 def soc_ev_max_const(model,t): 
@@ -202,9 +198,13 @@ def gen_limit_const(model, t):
 
 #model
 def export_limit_rule(model, t):
-    return model.P_exp[t]+model.P_load[t]+model.P_charge_bss[t]+model.P_charge_ev[t]<=model.P_pv[t]
+    return model.P_exp[t] <= model.P_pv[t] + model.P_gen[t]
 
+# def export_limit_rule(model, t):
+#     return model.P_exp[t]+model.P_load[t]+model.P_charge_bss[t]+model.P_charge_ev[t]<=model.P_pv[t] + model.P_gen[t]
 
+def import_limit_rule(model, t):
+    return model.P_imp[t] <= model.P_load[t]+model.P_charge_bss[t]+model.P_charge_ev[t]
 
 
 
@@ -216,13 +216,12 @@ def run(model, results):
         utils.check_res(results)
         utils.print_res(results)
         utils.plot_res(results)  
-        utils.set_price_scenario("high_import")
     return results
 
 
 if __name__ == "__main__":
     start_time = datetime(2021, 1, 1, 0, 0, 0)                                  # Start time of the simulation [YYYY, MM, DD, HH, MM, SS]
-    n_days = 365                                                                 # Number of days to simulate
+    n_days = 3                                                                 # Number of days to simulate
 
     # Given quantities for the system sizes
     C_pv = 10                            # PV system size [kWp]

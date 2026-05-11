@@ -198,18 +198,5 @@ def compute_year_costs(res):
     print("OPEX:", opex)
     return 
 
-def set_price_scenario(scenario):
-    global PI_imp, PI_exp
 
-    if scenario == "base":
-        PI_imp = 0.2
-        PI_exp = 0.05
-
-    elif scenario == "high_import":
-        PI_imp = 0.4
-        PI_exp = 0.05
-
-    elif scenario == "low_export":
-        PI_imp = 0.2
-        PI_exp = 0.01
 

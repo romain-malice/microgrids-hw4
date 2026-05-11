@@ -10,9 +10,9 @@ inv_hor = 20                                       # Investment horizon [year]
 # =============================================================================
 #  Costs
 # ==============  Operation  ==================================================
-PI_gen = 0.6                          # Fuel costs for generator [EUR/kWh]
-PI_imp = 0.4                          # Cost of importing energy [EUR/kWh]
-PI_exp = 0.03                         # Revenue from exporting energy [EUR/kWh]
+#PI_gen = 0.6                          # Fuel costs for generator [EUR/kWh]
+#PI_imp = 0.4                          # Cost of importing energy [EUR/kWh]
+#PI_exp = 0.03                         # Revenue from exporting energy [EUR/kWh]
 # ==============  Investment  =================================================
 PI_c_pv = 1800                        # Cost of PV capacity [EUR/kWp]
 PI_c_bss = 280                        # Cost of battery capacity [EUR/kWh]
@@ -54,3 +54,26 @@ PV_CO2 = 1.8e3 # g/Wp
 STORAGE_CO2 = 150 #g/Wh
 GENSET_CO2 = 10 #g/W
 INVERTER_CO2 = 60 #g/VA
+
+scenario = "base"
+
+if scenario == "base":
+        PI_gen = 0.6                          # Fuel costs for generator [EUR/kWh]
+        PI_imp = 0.4                          # Cost of importing energy [EUR/kWh]
+        PI_exp = 0.03   
+
+elif scenario == "high_import":
+        PI_imp = 0.4
+        PI_exp = 0.05
+        PI_gen = 0.6
+        
+
+elif scenario == "low_export":
+        PI_imp = 0.2
+        PI_exp = 0.01
+        PI_gen = 0.6
+
+elif scenario == "high_gen":
+        PI_imp = 0.4
+        PI_exp = 0.03
+        PI_gen = 0.3
