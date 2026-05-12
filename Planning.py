@@ -221,7 +221,7 @@ def run(model, results):
 
 if __name__ == "__main__":
     start_time = datetime(2021, 1, 1, 0, 0, 0)                                  # Start time of the simulation [YYYY, MM, DD, HH, MM, SS]
-    n_days = 3                                                                 # Number of days to simulate
+    n_days = 365                                                                 # Number of days to simulate
 
     # Given quantities for the system sizes
     C_pv = 10                            # PV system size [kWp]
@@ -231,7 +231,7 @@ if __name__ == "__main__":
     P_max_gen = 10                       # Maximum generator power [kW]
 
 
-    results = utils.Results(start_time, n_days, yearly_kwh=0, yearly_km=0)      # Initialize results object with start time and number of days, yearly consumption and km driven
+    results = utils.Results(start_time, n_days, yearly_kwh=200, yearly_km=2000)      # Initialize results object with start time and number of days, yearly consumption and km driven
     model = create_model(results,C_pv,C_bss,P_nom_bss, P_nom_pv, P_max_gen)
     run(model, results)
 
